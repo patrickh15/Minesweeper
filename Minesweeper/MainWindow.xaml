@@ -14,10 +14,16 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
         <Label x:Name="labelMines" Grid.Column="0" Margin="10" Content="Minen: 10" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-        <Label x:Name="labelTimer" Grid.Column="1" Margin="10" Content="Sekunden: 0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-        <Grid x:Name="gridGame" Grid.Row="1" Grid.ColumnSpan="2"/>
+        <ComboBox x:Name="comboDifficulty" Grid.Column="1" Width="150" Margin="10" SelectionChanged="comboDifficulty_SelectionChanged">
+            <ComboBoxItem Content="Einfach" IsSelected="True"/>
+            <ComboBoxItem Content="Mittel"/>
+            <ComboBoxItem Content="Schwer"/>
+        </ComboBox>
+        <Label x:Name="labelTimer" Grid.Column="2" Margin="10" Content="Sekunden: 0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+        <Grid x:Name="gridGame" Grid.Row="1" Grid.ColumnSpan="3"/>
 
     </Grid>
 </Window>

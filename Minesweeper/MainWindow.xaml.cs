@@ -15,15 +15,27 @@ namespace Minesweeper
 {
     public partial class MainWindow : Window
     {
-        const int EASY_HEIGHT = 10;
-        const int EASY_WIDTH = 10;
+        const int EASY_HEIGHT = 8;
+        const int EASY_WIDTH = 8;
         const int EASY_MINES = 10;
+        
+        const int MEDIUM_HEIGHT = 16;
+        const int MEDIUM_WIDTH = 16;
+        const int MEDIUM_MINES = 40;
+
+        const int HARD_HEIGHT = 16;
+        const int HARD_WIDTH = 30;
+        const int HARD_MINES = 99;
 
         const int VALUE_FOR_MINE = -1;
 
+        private int currentHeight;
+        private int currentWidth;
+        private int currentMines;
+
         private enum CellState { Hidden, Shown, Flagged };
         private enum GameState { Running, Lost, Won};
-
+        
         private int[,] gameMatrix;
         private CellState[,] gameStateMatrix;
         
@@ -52,10 +64,33 @@ namespace Minesweeper
         {
             timer.Stop();
             seconds = 0;
+            selectDifficulty();
             initGameAndStateMatrix();
             initGameUI();
             draw();
             timer.Start();
+        }
+
+        private void selectDifficulty()
+        {
+            if (comboDifficulty.SelectedIndex == 0) // Einfach
+            {
+                currentWidth = EASY_WIDTH;
+                currentHeight = EASY_HEIGHT;
+                currentMines = EASY_MINES;
+            }
+            else if (comboDifficulty.SelectedIndex == 1) // Mittel
+            {
+                currentWidth = MEDIUM_WIDTH;
+                currentHeight = MEDIUM_HEIGHT;
+                currentMines = MEDIUM_MINES;
+            }
+            else if (comboDifficulty.SelectedIndex == 2) // Schwer
+            {
+                currentWidth = HARD_WIDTH;
+                currentHeight = HARD_HEIGHT;
+                currentMines = HARD_MINES;
+            }
         }
 
         private void addSecond(object sender, EventArgs e)
@@ -66,7 +101,7 @@ namespace Minesweeper
 
         private void initGameAndStateMatrix()
         {
-            gameMatrix = new int[EASY_HEIGHT, EASY_WIDTH];
+            gameMatrix = new int[currentHeight, currentWidth];
             gameStateMatrix = new CellState[gameMatrix.GetLength(0), gameMatrix.GetLength(1)];
             
 
@@ -91,7 +126,7 @@ namespace Minesweeper
                     gameMatrix[newTop, newLeft] = VALUE_FOR_MINE;
                     minesAdded++;
                 }
-            } while (minesAdded < EASY_MINES);
+            } while (minesAdded < currentMines);
 
             for (int i = 0; i < gameMatrix.GetLength(0); i++)
                 for (int j = 0; j < gameMatrix.GetLength(1); j++)
@@ -181,16 +216,50 @@ namespace Minesweeper
         {
             Button button = (Button)sender;
             (int row, int col) = ((int,int))button.Tag;
-            gameStateMatrix[row, col] = CellState.Shown;
-            if (gameMatrix[row, col] == VALUE_FOR_MINE) //auf mine geklickt --> verloren
-                endGame(false);
+            if (gameStateMatrix[row, col] == CellState.Shown)
+            {
+                if (gameMatrix[row, col] > 0)
+                {
+                    if (countFlagsAround(row, col) == gameMatrix[row, col])
+                    {
+                        revealSurroundingHiddenFields(row, col);
+                    }
+                }
+            }
             else
-                unveilEmptyFields(row, col);
+            {
+                gameStateMatrix[row, col] = CellState.Shown;
+                if (gameMatrix[row, col] == VALUE_FOR_MINE) //auf mine geklickt --> verloren
+                    endGame(false);
+                else
+                    unveilEmptyFields(row, col);
+            }
 
             if(playerWon())
                 endGame(true);
 
             draw();
+        }
+
+        private void revealSurroundingHiddenFields(int row, int col)
+        {
+            for (int i = row - 1; i <= row + 1; i++)
+            {
+                for (int j = col - 1; j <= col + 1; j++)
+                {
+                    if (i >= 0 && i < currentHeight && j >= 0 && j < currentWidth)
+                    {
+                        if (gameStateMatrix[i, j] == CellState.Hidden)
+                        {
+                            gameStateMatrix[i, j] = CellState.Shown;
+                            if (gameMatrix[i, j] == VALUE_FOR_MINE)
+                                endGame(false);
+                            else if (gameMatrix[i, j] == 0)
+                                unveilEmptyFields(i, j);
+                        }
+                    }
+                }
+            }
         }
 
         private void buttonRightClick(object sender, MouseButtonEventArgs e)
@@ -209,6 +278,23 @@ namespace Minesweeper
             }
             updateMineCounter();
             draw();
+        }
+
+        private int countFlagsAround(int row, int col)
+        {
+            int flags = 0;
+            for (int i = row - 1; i <= row + 1; i++)
+            {
+                for (int j = col - 1; j <= col + 1; j++)
+                {
+                    if (i >= 0 && i < currentHeight && j >= 0 && j < currentWidth)
+                    {
+                        if (gameStateMatrix[i, j] == CellState.Flagged)
+                            flags++;
+                    }
+                }
+            }
+            return flags;
         }
 
         private void unveilEmptyFields(int row, int col)
@@ -252,8 +338,8 @@ namespace Minesweeper
         private bool playerWon()
         {   
             bool won = true;
-            for (int i = 0; i < EASY_HEIGHT; i++)
-                for (int j = 0; j < EASY_WIDTH; j++)
+            for (int i = 0; i < currentHeight; i++)
+                for (int j = 0; j < currentWidth; j++)
                     if (gameMatrix[i, j] != VALUE_FOR_MINE && gameStateMatrix[i,j] == CellState.Hidden)
                         won = false;
 
@@ -309,6 +395,12 @@ namespace Minesweeper
             }
             
                 
+        }
+
+        private void comboDifficulty_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if(timer != null) //wird sonst vor dem constructor ausgeführt
+                resetGame();
         }
     }
 }
